@@ -6,7 +6,7 @@ var exec = require('child_process').exec;
 
 var fs = require('fs');
 var readline = require('readline');// 引入readline模块
-var filename = 'test.log';
+var filename = 'trying.log';
 
 
 

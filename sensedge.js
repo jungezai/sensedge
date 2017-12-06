@@ -10,8 +10,8 @@ var mysql = require('mysql');
 //Router-master
 var util = require('util');
 var exec_mosq = require('child_process').exec;
-var mosq_comand = 'sudo mosquitto -v -p 8883';
-var mosq_sub_comand = 'sudo mosquitto_sub -t fall-locate/Sensor-fe:52:df:aa:1c:6a -p 8883';
+var mosq_comand = 'mosquitto -v -p 8883';
+var mosq_sub_comand = 'mosquitto_sub -t fall-locate/Sensor-fe:52:df:aa:1c:6a -p 8883';
 
 // Constant
 const TYPE_DIAPERSENS =	1
@@ -130,10 +130,13 @@ try{
 	//}
 	});
 
+
+	if(os.hostname == 'raspberrypi'){
+
 	exec_mosq(mosq_comand, function(error, stdout, stderr){
 	if(error){
 	console.error('mosq stderr', stderr);
-	throw error;
+//	throw error;
 	}
 	console.log('stdout', stdout);
 	});
@@ -141,11 +144,13 @@ try{
 	exec_mosq(mosq_sub_comand.concat('-h', hostip,'>trying.log'), function(error, stdout, stderr){
 	if(error){
 	console.error('mosq sub stderr', stderr);
-	throw error;
+//	throw error;
 	}
 	console.log('stdout', stdout);
 	});
 
+	}
+	
 
 		}catch(e){
 	console.log('readdirSync:'+e);
@@ -544,7 +549,7 @@ function pushRouter(addr, vt, vh, rssi, txpower, callback){
 		//'--cafile', 'certs/rootCA.pem',
 		//'--cert', 'certs/keys/certificate.pem',
 		//'--key', 'certs/keys/private.key',
-		'-h', '192.168.3.225',
+		'-h', hostip,
 		'-p', '8883'
 	];
  var logDate = new Date();
