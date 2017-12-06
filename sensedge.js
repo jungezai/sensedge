@@ -5,6 +5,14 @@ var ip = require('ip');
 var mqsh = require('./mqpubsub.js');
 var mysql = require('mysql');
 
+
+
+//Router-master
+var util = require('util');
+var exec_mosq = require('child_process').exec;
+var mosq_comand = 'sudo mosquitto -v -p 8883';
+var mosq_sub_comand = 'sudo mosquitto_sub -t fall-locate/Sensor-fe:52:df:aa:1c:6a -p 8883';
+
 // Constant
 const TYPE_DIAPERSENS =	1
 const TYPE_FALLSENS   = 2
@@ -97,6 +105,57 @@ function Device(peripheral) {
         //
 	this.TXPower		= peripheral.advertisement.txPowerLevel;
 }
+
+var hostip;
+var mosq_param = [
+	'-h', hostip,
+	'-p', '8883'
+	];
+
+var hostcmd = 'nmblookup raspberrypi';
+//open mosquitto and mosquitto_sub
+
+try{
+	exec_mosq(hostcmd, function(error, stdout, stderr){
+	if(error){
+	console.error('hostcmd',stderr);
+	throw error;
+	}
+
+	console.log('stdout--host', stdout);
+	stdout = stdout.split(' ');
+	hostip = stdout[0];
+	//for(var s in stdout){
+//	console.log('s'+s,stdout[0]);
+	//}
+	});
+
+	exec_mosq(mosq_comand, function(error, stdout, stderr){
+	if(error){
+	console.error('mosq stderr', stderr);
+	throw error;
+	}
+	console.log('stdout', stdout);
+	});
+
+	exec_mosq(mosq_sub_comand.concat('-h', hostip,'>trying.log'), function(error, stdout, stderr){
+	if(error){
+	console.error('mosq sub stderr', stderr);
+	throw error;
+	}
+	console.log('stdout', stdout);
+	});
+
+
+		}catch(e){
+	console.log('readdirSync:'+e);
+}
+
+
+
+
+
+
 
 function doNotification(dev) {
 	if (gConfig['useAlgorithm']) {
@@ -488,13 +547,15 @@ function pushRouter(addr, vt, vh, rssi, txpower, callback){
 		'-h', '192.168.3.225',
 		'-p', '8883'
 	];
+ var logDate = new Date();
+ var distance = processDistance(sumrssi/count, txpower);
 
 	count++;
         sumrssi+=rssi;
-//	console.log('count'+count,'sumrssi'+sumrssi);
+	console.log('count'+count,'sumrssi'+sumrssi,'hostname'+os.hostname,'distance'+distance);
 	if(count>29){
-	var logDate = new Date();
-	var distance = processDistance(sumrssi/count, txpower);
+//	var logDate = new Date();
+//	var distance = processDistance(sumrssi/count, txpower);
 	var postData = {
 		datetime: logDate.toISOString(),
 		HostName: os.hostname(),
@@ -635,6 +696,22 @@ noble.on('discover', function(peripheral) {
 			if (addr != gCalibrateDevice)
 				return;
 		}
+
+
+
+
+
+		var Rssi = peripheral.rssi;
+		var TXPower = peripheral.advertisement.txPowerLevel;
+		console.log("fallsens", addr, "rssi",Rssi ,"txp" ,TXPower);
+		pushRouter(addr, 0 , 0 , Rssi ,TXPower , function(err){
+
+		if( err ) console.log('pushRouter err--');
+
+
+		});
+		return;
+
 
 		// Avoid duplicated connection, parallel connection and if we haven't heard a sensor
 		// for 20s, we will reconnect with it (when adv is heard).
