@@ -9,10 +9,12 @@ var readline = require('readline');// 引入readline模块
 var filename = 'trying.log';
 
 
-
 var mosq = [];
 var str1 = 'mosquitto -v -p 8883';
 var str = 'mosquitto_sub -t fall-locate/Sensor-fe:52:df:aa:1c:6a -h 192.168.3.225 -p 8883 >>test.log';
+var position_cmd='./test ';
+
+
 var mosqparam = [
 //		'--cafile', 'certs/rootCA.pem',
 //		'--cert', 'certs/keys/certificate.pem',
@@ -60,6 +62,7 @@ exec(str, function(error, stdout, stderr) {
 var logsArr = new Array();
 var listenArr = new Array();
 var DistanceArray = new Array();
+var count=0;
 function init(){
  sendHisLogs(filename, listenLogs);
 }
@@ -76,6 +79,54 @@ function sendHisLogs(filename,listenLogs){
     }
   }).on('close', function() {
     for(var i = 0 ;i<logsArr.length;i++){
+		var temp = logsArr[i].split('\r\n'); 
+		var JSONDATA = JSON.parse(temp);
+
+                 if(  count >= 4  ){
+		console.log(position_cmd.concat(DistanceArray[0],' ',DistanceArray[1],' ',DistanceArray[2],' ',DistanceArray[3],' >>position.log'));
+                 exec(position_cmd.concat(DistanceArray[0],' ',DistanceArray[1],' ',DistanceArray[2],' ',DistanceArray[3],' >>position.log'),
+                  function(error, stdout, stderr){
+                 if(error){
+                 console.log('position cmd error',stderr);
+                 }
+                 console.log('position ', stdout);
+                 });
+		//清零
+		count =0;
+                 for(i=0;i<4;i++)
+		DistanceArray[i]=0;
+                 }
+
+                 console.log(JSONDATA.HostName);
+
+                 switch(JSONDATA.HostName){
+                 case 'raspberrypi':
+                         DistanceArray[0] = JSONDATA.distance*1000;
+                         console.log('dis[0]'+DistanceArray[0]);
+			++count;
+                         break;
+                 case 'raspClient1':
+                         DistanceArray[1] = JSONDATA.distance*1000;
+                         console.log('dis[1]'+DistanceArray[1]);
+			++count;
+                         break;
+                 case 'raspClient2':
+                         DistanceArray[2] = JSONDATA.distance*1000;
+                         console.log('dis[2]'+DistanceArray[2]);
+			++count;
+                         break;
+                 case 'raspClient3':
+                         DistanceArray[3] = JSONDATA.distance*1000;
+                         console.log('dis[3]'+DistanceArray[3]);
+                        ++count; 
+			break;
+
+                 default:
+                         console.log('unknow data!');
+                         break;
+
+                 }
+
       console.log('发送历史信号: ' + logsArr[i]);
       
     }
@@ -111,42 +162,58 @@ var listenLogs = function(filePath){
 
          function generateTxt(str){ // 处理新增内容的地方
           var temp = str.split('\r\n');
-	  var JSONDATA = JSON.parse(temp);
+/*	  var JSONDATA = JSON.parse(temp);
 
-console.log(JSONDATA.HostName);
+		if((DistanceArray[0]!= 0) &&
+		   (DistanceArray[1]!= 0) &&
+		   (DistanceArray[2]!= 0) &&
+		   (DistanceArray[3]!= 0) 
+		){
+		exec(position_cmd.concat(DistanceArray[0],DistanceArray[1],DistanceArray[2],DistanceArray[3],'>>posotion.log'),
+		 function(error, stdout, stderr){
+		if(error){
+		console.log('position cmd error',stderr);
+		}
+		console.log('position ', stdout);
+		});
 
-	switch(JSONDATA.HostName){
-	case 'raspberrypi':
-	DistanceArray[0] = JSONDATA.distance;
-	console.log('dis[0]'+DistanceArray[0]);
-	break;
-	case 'raspClient1':
-	DistanceArray[1] = JSONDATA.distance;
-	console.log('dis[1]'+DistanceArray[1]);
-	break;
-	case 'raspClient2':
-	DistanceArray[2] = JSONDATA.distance;
-	console.log('dis[2]'+DistanceArray[2]);
-	break;
-	case 'raspClient3':
-	DistanceArray[3] = JSONDATA.distance;
-	console.log('dis[3]'+DistanceArray[3]);
-	break;
+		DistanceArray.length = 0;//清零
+		}
 
-	default:
-	console.log('unknow data!');
-	break;
+		console.log(JSONDATA.HostName);
 
-	}
+		switch(JSONDATA.HostName){
+		case 'raspberrypi':
+			DistanceArray[0] = JSONDATA.distance*1000;
+			console.log('dis[0]'+DistanceArray[0]);
+			break;
+		case 'raspClient1':
+			DistanceArray[1] = JSONDATA.distance*1000;
+			console.log('dis[1]'+DistanceArray[1]);
+			break;
+		case 'raspClient2':
+			DistanceArray[2] = JSONDATA.distance*1000;
+			console.log('dis[2]'+DistanceArray[2]);
+			break;
+		case 'raspClient3':
+			DistanceArray[3] = JSONDATA.distance*1000;
+			console.log('dis[3]'+DistanceArray[3]);
+			break;
 
+		default:
+			console.log('unknow data!');
+			break;
+
+		}
+*/
  for(var s in temp){
             console.log(temp[s]);
           }
          }
   });
 }
-function getNewLog(path){
-  console.log('做一些解析操作');
-}
+//function getNewLog(path){
+//  console.log('做一些解析操作');
+//}
 init();
 

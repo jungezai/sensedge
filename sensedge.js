@@ -10,8 +10,12 @@ var mysql = require('mysql');
 //Router-master
 var util = require('util');
 var exec_mosq = require('child_process').exec;
+var fs = require('fs');
+var readline = require('readline');
+var filename = 'trying.log';//mqtt sub's data
 var mosq_comand = 'mosquitto -v -p 8883';
-var mosq_sub_comand = 'mosquitto_sub -t fall-locate/Sensor-fe:52:df:aa:1c:6a -p 8883';
+var mosq_sub_comand = 'mosquitto_sub -p 8883 -t fall-locate/Sensor-fe:52:df:aa:1c:6a';
+var position_comand = './test ';
 
 // Constant
 const TYPE_DIAPERSENS =	1
@@ -107,12 +111,25 @@ function Device(peripheral) {
 }
 
 var hostip;
+var device_addr;
 var mosq_param = [
 	'-h', hostip,
 	'-p', '8883'
 	];
-
+//var mosp_sub_param = [
+//	'-h', hostip,
+//	'-p', '8883',
+//	'-t', 'fall-locate/Sensor-'+device_addr
+//	];
 var hostcmd = 'nmblookup raspberrypi';
+
+var disFlag = new Array();
+var logsArr = new Array();
+var listenArr = new Array();
+var DistanceArray = new Array();
+for(var i=0;i<4;i++) disFlag[i]=0;
+var discount=0;
+
 //open mosquitto and mosquitto_sub
 
 try{
@@ -125,14 +142,15 @@ try{
 	console.log('stdout--host', stdout);
 	stdout = stdout.split(' ');
 	hostip = stdout[0];
+console.log('hostip',hostip);
 	//for(var s in stdout){
 //	console.log('s'+s,stdout[0]);
 	//}
 	});
 
-
+//master Router operate
 	if(os.hostname == 'raspberrypi'){
-
+//open mqtt
 	exec_mosq(mosq_comand, function(error, stdout, stderr){
 	if(error){
 	console.error('mosq stderr', stderr);
@@ -140,8 +158,9 @@ try{
 	}
 	console.log('stdout', stdout);
 	});
-
-	exec_mosq(mosq_sub_comand.concat('-h', hostip,'>trying.log'), function(error, stdout, stderr){
+//open mqtt sub
+//	console.log('--------',mosq_sub_comand.concat('-h', ' ', '192.168.3.225', ' >>trying.log'));
+	exec_mosq(mosq_sub_comand.concat(' -h', ' ','192.168.3.225', ' >>trying.log'), function(error, stdout, stderr){
 	if(error){
 	console.error('mosq sub stderr', stderr);
 //	throw error;
@@ -149,17 +168,175 @@ try{
 	console.log('stdout', stdout);
 	});
 
-	}
-	
+	init();
 
-		}catch(e){
+	}
+//init();
+	}catch(e){
 	console.log('readdirSync:'+e);
+}
+//init;
+
+
+function init(){
+	ReadHisLogs(filename, listenLogs);
 }
 
 
+function ReadHisLogs(filename, listenLogs){
+	var r1 = readline.createInterface({input: fs.createReadStream(filename,{  enconding:'utf8'   }), output: null, terminal:false});
+	r1.on('line', function(line){
+	if (line) {
+	logsArr.push(line.toString());
+	}
+	}).on('close', function() {
+	for(var i=0;i<logsArr.length;i++){
+		var temp = logsArr[i].split('\r\n');
+		var JSONDATA = JSON.parse(temp);
+/*		if( count >= 4){
+			console.log(position_comand.concat(DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' >>position.log'));
+			exec(position_comand.concat(DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' >>position.log'),
+			function(error, stdout, stderr){
+			if(error)console.log('positon cmd error');
+			console.log('positon stdout',stdout);
+			});
+			//清零
+			count = 0;
+			for(var i=0;i<4;i++)  DistanceArray[i] = 0;  
+		}
+*/
+	console.log(JSONDATA.HostName);
 
+	switch(JSONDATA.HostName){
+		case 'raspberrypi':
+			if(DistanceArray[0] == 0)++discount;
+			DistanceArray[0] = JSONDATA.distance*1000;
+			console.log('dis[0]'+DistanceArray[0]);
+			break;
+		case 'raspClient1':
+			if(DistanceArray[1] == 0)++discount;
+                        DistanceArray[1] = JSONDATA.distance*1000;
+                        console.log('dis[1]'+DistanceArray[1]);
+                        break;
+		case 'raspClient2':
+			if(DistanceArray[2] == 0)++discount;
+                        DistanceArray[2] = JSONDATA.distance*1000;
+                        console.log('dis[2]'+DistanceArray[2]);
+                        break;
+		case 'raspClient3':
+			if(DistanceArray[3] == 0)++discount;
+                        DistanceArray[3] = JSONDATA.distance*1000;
+                        console.log('dis[3]'+DistanceArray[3]);
+                        break;
+		default:
+			console.log('unknow data!');
+			break;
+		}
+	console.log('读取数据：' + logsArr[i]);
+	 if( discount >= 4){
+                         //console.log(position_comand.concat(DistanceArray[0],' ',DistanceArray[1],' ',DistanceArray[2],' ',DistanceArray[3],' >>position.log'));
+                         exec_mosq(position_comand.concat(DistanceArray[0],' ',DistanceArray[1],' ',DistanceArray[2],' ',DistanceArray[3],' >position.log'),
+                         function(error, stdout, stderr){
+                         if(error)console.log('positon cmd error');
+                         console.log('positon stdout',stdout);
+                         });
+                         //清零
+                         count = 0;
+                         for(var i=0;i<4;i++)  DistanceArray[i] = 0;
+                 }
+	}
+	listenLogs(filename);
+	});
+}
 
+ function listenLogs(filePath){
+	console.log('MQTT DATA日志监听中...');
+	var fileOPFlag = "a+";
 
+	fs.open(filePath,fileOPFlag,function(error,fd){	var buffer; var remainder = null;
+		if(error)console.log('打开失败');
+		fs.watchFile(filePath,{
+		persistent: true,
+		interval: 1000
+		},function(curr, prev){
+		console.log(curr);
+		if(curr.mtime>prev.mtime){
+		buffer = new Buffer(curr.size - prev.size);
+
+		fs.read(fd, buffer, 0,(curr.size - prev.size),prev.size,function(err, bytesRead, buffer){
+			generateTxt(buffer.toString())
+		});
+		}
+		else{ console.log('文件读取错误');}
+	})
+
+	function generateTxt(str){
+	var temp = str.split('\r\n');
+	var JSONDATA = JSON.parse(temp);
+/*
+	          if( count >= 4){
+                 console.log(position_comand.concat(DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' >>position.log'));
+                 exec(position_comand.concat(DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' >>position.log'),
+                 function(error, stdout, stderr){
+                 if(error)  console.log('positon cmd error');
+                 console.log('positon stdout',stdout);
+                 });
+                 //清零
+         count = 0;
+         for(var i=0;i<4;i++)  DistanceArray[i] = 0; 
+         }
+*/
+         console.log(JSONDATA.HostName);
+
+         switch(JSONDATA.HostName){
+                 case 'raspberrypi':
+//			if(DistanceArray[0] == 0)++count;
+                         DistanceArray[0] = JSONDATA.distance*1000;
+                         console.log('dis[0]'+DistanceArray[0]);
+			 if(!disFlag[0])++discount;
+			 disFlag[0] = true;
+                         break;
+                 case 'raspClient1':
+//			if(DistanceArray[1] == 0)++count;
+                         DistanceArray[1] = JSONDATA.distance*1000;
+                         console.log('dis[1]'+DistanceArray[1]);
+			 if(!disFlag[1])++discount;
+                         disFlag[1] = true;
+			 break;
+                 case 'raspClient2':
+//			if(DistanceArray[2] == 0)++count;
+                         DistanceArray[2] = JSONDATA.distance*1000;
+                         console.log('dis[2]'+DistanceArray[2]);
+                         if(!disFlag[2])++discount;
+			 disFlag[2] = true;
+			 break;
+                 case 'raspClient3':
+//			if(DistanceArray[3] == 0)++count;
+                         DistanceArray[3] = JSONDATA.distance*1000;
+                         console.log('dis[3]'+DistanceArray[3]);
+                         if(!disFlag[3])++discount;
+			 disFlag[3] = true;
+			 break;
+                 default:
+                         console.log('unknow data!');
+                         break;
+			}
+		console.log('discount=====',discount);
+	for(var s in temp){ console.log(temp[s]);}
+ 	 if( discount >= 4){
+  //                console.log(position_comand.concat(DistanceArray[0],' ',DistanceArray[1],' ',DistanceArray[2],' ',DistanceArray[3],' >>position.log'));
+                  exec_mosq(position_comand.concat(DistanceArray[0],' ',DistanceArray[1],' ',DistanceArray[2],' ',DistanceArray[3],' >position.log'),
+                  function(error, stdout, stderr){
+                  if(error)  console.log('positon cmd error');
+                  console.log('positon stdout',stdout);
+                  });
+                  //清零
+          discount = 0;
+          for(var i=0;i<4;i++)  disFlag[i] = false;
+          }
+	}
+	});
+}
 
 
 function doNotification(dev) {
@@ -576,6 +753,7 @@ function pushRouter(addr, vt, vh, rssi, txpower, callback){
 		function(err, stdout, stderr){
 		callback(false, err);
 	});
+        
 	sumrssi = 0;
 	count = 0;
 	}
@@ -710,7 +888,7 @@ noble.on('discover', function(peripheral) {
 		var TXPower = peripheral.advertisement.txPowerLevel;
 		console.log("fallsens", addr, "rssi",Rssi ,"txp" ,TXPower);
 		pushRouter(addr, 0 , 0 , Rssi ,TXPower , function(err){
-
+		
 		if( err ) console.log('pushRouter err--');
 
 
