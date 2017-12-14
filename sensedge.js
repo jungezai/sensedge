@@ -16,7 +16,8 @@ var filename = 'trying.log';//mqtt sub's data
 var mosq_comand = 'mosquitto -v -p 8883';
 var mosq_sub_comand = 'mosquitto_sub -p 8883 -t fall-locate/Sensor-fe:52:df:aa:1c:6a';
 var position_comand = './test ';
-
+var areax=10;
+var areay=10;
 // Constant
 const TYPE_DIAPERSENS =	1
 const TYPE_FALLSENS   = 2
@@ -129,7 +130,9 @@ var listenArr = new Array();
 var DistanceArray = new Array();
 for(var i=0;i<4;i++) disFlag[i]=0;
 var discount=0;
-
+//var EmptyDeystr='{ "addr":"","count":0,"distance":{"0":0,"1":0,"2":0,"3":0 } }';
+var EmptyDevjson=JSON.parse('{"addr":"","count":0,"datetime":"","distance":{"raspberrypi":0,"raspClient1":0,"raspClient2":0,"raspClient3":0 } }');
+var DevInfo=new Array();
 //open mosquitto and mosquitto_sub
 
 try{
@@ -142,7 +145,7 @@ try{
 	console.log('stdout--host', stdout);
 	stdout = stdout.split(' ');
 	hostip = stdout[0];
-console.log('hostip',hostip);
+	console.log('master router hostip:',hostip);
 	//for(var s in stdout){
 //	console.log('s'+s,stdout[0]);
 	//}
@@ -160,7 +163,7 @@ console.log('hostip',hostip);
 	});
 //open mqtt sub
 //	console.log('--------',mosq_sub_comand.concat('-h', ' ', '192.168.3.225', ' >>trying.log'));
-	exec_mosq(mosq_sub_comand.concat(' -h', ' ','192.168.3.225', ' >>trying.log'), function(error, stdout, stderr){
+	exec_mosq(mosq_sub_comand.concat(' -h', ' ',hostip, ' >>trying.log'), function(error, stdout, stderr){
 	if(error){
 	console.error('mosq sub stderr', stderr);
 //	throw error;
@@ -193,45 +196,9 @@ function ReadHisLogs(filename, listenLogs){
 	for(var i=0;i<logsArr.length;i++){
 		var temp = logsArr[i].split('\r\n');
 		var JSONDATA = JSON.parse(temp);
-/*		if( count >= 4){
-			console.log(position_comand.concat(DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' >>position.log'));
-			exec(position_comand.concat(DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' >>position.log'),
-			function(error, stdout, stderr){
-			if(error)console.log('positon cmd error');
-			console.log('positon stdout',stdout);
-			});
-			//清零
-			count = 0;
-			for(var i=0;i<4;i++)  DistanceArray[i] = 0;  
-		}
-*/
-	console.log(JSONDATA.HostName);
-
-	switch(JSONDATA.HostName){
-		case 'raspberrypi':
-			if(DistanceArray[0] == 0)++discount;
-			DistanceArray[0] = JSONDATA.distance*1000;
-			console.log('dis[0]'+DistanceArray[0]);
-			break;
-		case 'raspClient1':
-			if(DistanceArray[1] == 0)++discount;
-                        DistanceArray[1] = JSONDATA.distance*1000;
-                        console.log('dis[1]'+DistanceArray[1]);
-                        break;
-		case 'raspClient2':
-			if(DistanceArray[2] == 0)++discount;
-                        DistanceArray[2] = JSONDATA.distance*1000;
-                        console.log('dis[2]'+DistanceArray[2]);
-                        break;
-		case 'raspClient3':
-			if(DistanceArray[3] == 0)++discount;
-                        DistanceArray[3] = JSONDATA.distance*1000;
-                        console.log('dis[3]'+DistanceArray[3]);
-                        break;
-		default:
-			console.log('unknow data!');
-			break;
-		}
+		device_addr = JSONDATA.addr;
+//		console.log(JSONDATA.HostName);
+/*
 	console.log('读取数据：' + logsArr[i]);
 	 if( discount >= 4){
                          //console.log(position_comand.concat(DistanceArray[0],' ',DistanceArray[1],' ',DistanceArray[2],' ',DistanceArray[3],' >>position.log'));
@@ -244,9 +211,89 @@ function ReadHisLogs(filename, listenLogs){
                          count = 0;
                          for(var i=0;i<4;i++)  DistanceArray[i] = 0;
                  }
+
+*/
+		for( var j=0;j<DevInfo.length;j++)
+		{
+
+			if(DevInfo[j].addr==JSONDATA.addr)
+			{
+			console.log('更新设备:'+JSONDATA.addr+'信息：'+temp);
+			DealdisData(JSONDATA,j);
+			break;
+			}
+			else if(j==DevInfo.length-1)
+			{
+			console.log('创建新设备:'+JSONDATA.addr+'信息：'+temp);
+			console.log('befor '+DevInfo.length);
+			DevInfo[DevInfo.length]=  EmptyDevjson;
+			console.log('after '+DevInfo.length);
+ 	                DevInfo[DevInfo.length-1].addr=JSONDATA.addr;
+ 	                DealdisData(JSONDATA,DevInfo.length-1);
+
+			}
+
+		}
+		if(j==0&&DevInfo.length==0)
+		{
+		console.log('初始化创建新设备:'+JSONDATA.addr+'信息：'+temp);
+		DevInfo[0]=  EmptyDevjson;
+		DevInfo[0].addr=JSONDATA.addr;
+		DealdisData(JSONDATA,0);
+		}
 	}
+
 	listenLogs(filename);
 	});
+}
+
+ function DealdisData(json, num)
+{
+  switch(json.HostName)
+  {
+   case 'raspberrypi':
+	if(DevInfo[num].distance.raspberrypi == 0) ++DevInfo[num].count;
+	DevInfo[num].distance.raspberrypi =json.distance;
+	console.log('更新raspberrypi：'+DevInfo[num].distance.raspberrypi+'count'+DevInfo[num].count);
+	break;
+   case 'raspClient1':
+	if(DevInfo[num].distance.raspClient1 == 0)  ++DevInfo[num].count;
+        DevInfo[num].distance.raspClient1 =json.distance;
+        console.log('更新raspClient1：'+DevInfo[num].distance.raspClient1+'count'+DevInfo[num].count);
+        break;
+   case 'raspClient2':
+        if(DevInfo[num].distance.raspClient2 == 0)  ++DevInfo[num].count;
+        DevInfo[num].distance.raspClient2 =json.distance;
+        console.log('更新raspClient2：'+DevInfo[num].distance.raspClient2+'count'+DevInfo[num].count);
+        break;
+   case 'raspClient3':
+        if(DevInfo[num].distance.raspClient3 == 0)  ++DevInfo[num].count;
+        DevInfo[num].distance.raspClient3 =json.distance;
+        console.log('更新raspClient3：'+DevInfo[num].distance.raspClient3+'count'+DevInfo[num].count);
+        break;
+	default:
+	console.log('error: unknow distance jsondata');
+
+  }
+
+	if(DevInfo[num].count>=4)
+	{
+	DevInfo[num].datetime = json.datetime;
+	console.log('调用位置算法'+position_comand.concat(DevInfo[num].datetime,' ',DevInfo[num].addr,' ',areax,' ',areay,' ',DevInfo[num].distance.raspberrypi,' ',DevInfo[num].distance.raspClient1,' ',DevInfo[num].distance.raspClient2,' ',DevInfo[num].distance.raspClient3, ' >>position.log'));
+        exec_mosq(position_comand.concat(DevInfo[num].datetime,' ',DevInfo[num].addr,' ',areax,' ',areay,' ',DevInfo[num].distance.raspberrypi,' ',DevInfo[num].distance.raspClient1,' ',DevInfo[num].distance.raspClient2,' ',DevInfo[num].distance.raspClient3,' >>position.log'),
+        function(error, stdout, stderr){
+        if(error)console.log('positon cmd error');
+        console.log('positon stdout',stdout);
+        });
+
+      //清零
+	DevInfo[num].count=0;
+	DevInfo[num].distance.raspberrypi=0;
+	DevInfo[num].distance.raspClient1=0;
+ 	DevInfo[num].distance.raspClient2=0;
+ 	DevInfo[num].distance.raspClient3=0;
+	}
+
 }
 
  function listenLogs(filePath){
@@ -261,6 +308,7 @@ function ReadHisLogs(filename, listenLogs){
 		},function(curr, prev){
 		console.log(curr);
 		if(curr.mtime>prev.mtime){
+		console.log('文件变化==========');
 		buffer = new Buffer(curr.size - prev.size);
 
 		fs.read(fd, buffer, 0,(curr.size - prev.size),prev.size,function(err, bytesRead, buffer){
@@ -271,8 +319,11 @@ function ReadHisLogs(filename, listenLogs){
 	})
 
 	function generateTxt(str){
-	var temp = str.split('\r\n');
+	var i;
+	var temp = str;
+console.log('在线json转换之前:%s oooo',temp);
 	var JSONDATA = JSON.parse(temp);
+console.log('在线json转换之后');
 /*
 	          if( count >= 4){
                  console.log(position_comand.concat(DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' >>position.log'));
@@ -286,54 +337,35 @@ function ReadHisLogs(filename, listenLogs){
          for(var i=0;i<4;i++)  DistanceArray[i] = 0; 
          }
 */
-         console.log(JSONDATA.HostName);
+//         console.log(JSONDATA.HostName);
 
-         switch(JSONDATA.HostName){
-                 case 'raspberrypi':
-//			if(DistanceArray[0] == 0)++count;
-                         DistanceArray[0] = JSONDATA.distance*1000;
-                         console.log('dis[0]'+DistanceArray[0]);
-			 if(!disFlag[0])++discount;
-			 disFlag[0] = true;
-                         break;
-                 case 'raspClient1':
-//			if(DistanceArray[1] == 0)++count;
-                         DistanceArray[1] = JSONDATA.distance*1000;
-                         console.log('dis[1]'+DistanceArray[1]);
-			 if(!disFlag[1])++discount;
-                         disFlag[1] = true;
-			 break;
-                 case 'raspClient2':
-//			if(DistanceArray[2] == 0)++count;
-                         DistanceArray[2] = JSONDATA.distance*1000;
-                         console.log('dis[2]'+DistanceArray[2]);
-                         if(!disFlag[2])++discount;
-			 disFlag[2] = true;
-			 break;
-                 case 'raspClient3':
-//			if(DistanceArray[3] == 0)++count;
-                         DistanceArray[3] = JSONDATA.distance*1000;
-                         console.log('dis[3]'+DistanceArray[3]);
-                         if(!disFlag[3])++discount;
-			 disFlag[3] = true;
-			 break;
-                 default:
-                         console.log('unknow data!');
-                         break;
-			}
-		console.log('discount=====',discount);
-	for(var s in temp){ console.log(temp[s]);}
- 	 if( discount >= 4){
-  //                console.log(position_comand.concat(DistanceArray[0],' ',DistanceArray[1],' ',DistanceArray[2],' ',DistanceArray[3],' >>position.log'));
-                  exec_mosq(position_comand.concat(DistanceArray[0],' ',DistanceArray[1],' ',DistanceArray[2],' ',DistanceArray[3],' >position.log'),
-                  function(error, stdout, stderr){
-                  if(error)  console.log('positon cmd error');
-                  console.log('positon stdout',stdout);
-                  });
-                  //清零
-          discount = 0;
-          for(var i=0;i<4;i++)  disFlag[i] = false;
-          }
+	for( i=0;i<DevInfo.length;i++)
+	 {
+        	 if(DevInfo[i].addr==JSONDATA.addr)
+         	{
+		console.log('更新设备:'+JSONDATA.addr+'信息：'+temp);
+         	DealdisData(JSONDATA,i);
+         	break;
+        	 }
+		else if(i==DevInfo.length-1)
+		{
+                console.log('创建新设备:'+JSONDATA.addr+'信息：'+temp);
+                console.log('befor '+DevInfo.length);
+                DevInfo[DevInfo.length]=  EmptyDevjson;
+                console.log('after '+DevInfo.length);
+                DevInfo[DevInfo.length-1].addr=JSONDATA.addr;
+                DealdisData(JSONDATA,DevInfo.length-1);
+		}
+ 	}
+ 	if(i==0&&DevInfo.length==0)
+ 	{
+	 console.log('初始化创建新设备:'+JSONDATA.addr+'信息：'+temp);
+         DevInfo[0]=  EmptyDevjson;
+         DevInfo[0].addr=JSONDATA.addr;
+         DealdisData(JSONDATA,0);
+ 	}
+
+
 	}
 	});
 }
@@ -736,28 +768,29 @@ function pushRouter(addr, vt, vh, rssi, txpower, callback){
         sumrssi+=rssi;
 	console.log('count'+count,'sumrssi'+sumrssi,'hostname'+os.hostname,'distance'+distance);
 	if(count>29){
+console.log('push-----------------');
 //	var logDate = new Date();
 //	var distance = processDistance(sumrssi/count, txpower);
 	var postData = {
 		datetime: logDate.toISOString(),
 		HostName: os.hostname(),
+		addr:addr,
 //		temperature: parseFloat(vt),
 //		humidity: parseFloat(vh),
 		Rssi: rssi,
 		TXPower: txpower,
-		count: count,
+//		count: count,
 		distance: parseFloat(distance)
 	};
-	console.log("pushRouter--", postData);
+	console.log("pushRouter--", postData,'json--', JSON.stringify(postData));
 	execFile('mosquitto_pub', mosqparam.concat('-t', 'fall-locate/Sensor-' + addr, '-m', JSON.stringify(postData)),
 		function(err, stdout, stderr){
 		callback(false, err);
 	});
-        
+
 	sumrssi = 0;
 	count = 0;
 	}
-
 }
 
 function pushAWS(addr, vt, vh, callback) {
@@ -888,7 +921,7 @@ noble.on('discover', function(peripheral) {
 		var TXPower = peripheral.advertisement.txPowerLevel;
 		console.log("fallsens", addr, "rssi",Rssi ,"txp" ,TXPower);
 		pushRouter(addr, 0 , 0 , Rssi ,TXPower , function(err){
-		
+
 		if( err ) console.log('pushRouter err--');
 
 

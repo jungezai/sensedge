@@ -24,11 +24,11 @@
 /* Largest nonnegative number still considered zero */
 #define   MAXZERO  0.001
 
-#define		ERR_TRIL_CONCENTRIC						-1
+#define		ERR_TRIL_CONCENTRIC				-1
 #define		ERR_TRIL_COLINEAR_2SOLUTIONS			-2
-#define		ERR_TRIL_SQRTNEGNUMB					-3
+#define		ERR_TRIL_SQRTNEGNUMB				-3
 #define		ERR_TRIL_NOINTERSECTION_SPHERE4			-4
-#define		ERR_TRIL_NEEDMORESPHERE					-5
+#define		ERR_TRIL_NEEDMORESPHERE				-5
 
 
 
@@ -550,7 +550,7 @@ int deca_3dlocate(vec3d	*const solution1,
 		do {
 
 			result = trilateration(&o1, &o2, &solution, p1, ovr_r1, p2, ovr_r2, p3, ovr_r3, p4, ovr_r4, MAXZERO);
-			
+
 			switch (result)
 			{
 			case TRIL_3SPHERES: // 3 spheres are used to get the result
@@ -580,7 +580,7 @@ int deca_3dlocate(vec3d	*const solution1,
 
 		} while (!success && (overlook_count <= 5) && !concentric);
 
-		
+
 		if (success)
 		{
 			switch (result)
@@ -596,7 +596,7 @@ int deca_3dlocate(vec3d	*const solution1,
 			case TRIL_4SPHERES:
 				/* calculate the new gdop */
 				gdoprate_compare1 = gdoprate(solution, p1, p2, p3);
-				
+
 				/* compare and swap with the better result */
 				if (gdoprate_compare1 <= gdoprate_compare2) 
 				{
@@ -643,7 +643,7 @@ int deca_3dlocate(vec3d	*const solution1,
 	//	printf("combination_counter=%d\r\n", combination_counter);
 
 	} while (combination_counter);
-	
+
 	// if it gives error for all 4 sphere combinations then no valid result is given
 	// otherwise return the trilateration mode used
 	if (trilateration_errcounter >= 4) return -1; else return trilateration_mode34;
@@ -652,7 +652,7 @@ int deca_3dlocate(vec3d	*const solution1,
 
 //anchorArray	 (m)  基站坐标
 //distanceArray	 (mm) 标签-基站距离
-int GetLocation(vec3d *best_solution, int use4thAnchor, vec3d* anchorArray, int *distanceArray)
+int GetLocation(vec3d *best_solution, int use4thAnchor, vec3d* anchorArray, int *distanceArray,char *time,char *addr,float areax,float areay)
 {
 
 	vec3d	o1, o2, p1, p2, p3, p4;
@@ -674,15 +674,15 @@ int GetLocation(vec3d *best_solution, int use4thAnchor, vec3d* anchorArray, int 
 //	r3 = (double)2500 / 1000.0;
 
 //	r4 = (double)2500 / 1000.0;
-	
+
 	r1 = (double)distanceArray[0] / 1000.0;
 	r2 = (double)distanceArray[1] / 1000.0;
 	r3 = (double)distanceArray[2] / 1000.0;
 
 	r4 = (double)distanceArray[3] / 1000.0;
 
-	printf("B	 %.3f %.3f %.3f %.3f\r\n",r1,r2,r3,r4);
-	
+//	printf("B	 %.3f %.3f %.3f %.3f\r\n",r1,r2,r3,r4);
+
 	//qDebug() << "GetLocation" << r1 << r2 << r3 << r4;
 
 	if(use4thAnchor==0)
@@ -692,7 +692,7 @@ int GetLocation(vec3d *best_solution, int use4thAnchor, vec3d* anchorArray, int 
 	result = deca_3dlocate(&o1, &o2, best_solution, &error, &best_3derror, &best_gdoprate,
 		p1, r1, p2, r2, p3, r3, p4, r4, &combination);
 
-	
+
 	//qDebug() << "GetLocation" << result << "sol1: " << o1.x << o1.y << o1.z << " sol2: " << o2.x << o2.y << o2.z;
 
 	if (result >= 0)
@@ -720,18 +720,21 @@ int GetLocation(vec3d *best_solution, int use4thAnchor, vec3d* anchorArray, int 
 			if (o1.z < p1.z) *best_solution = o1; else *best_solution = o2;
 		}
 	}
-	printf("D	x=%.4f\r\n	y=%.4f\r\n	z=%.4f\r\n	err=%d\r\n", best_solution->x, best_solution->y, best_solution->z, result);
-
+	//printf("D	x=%.4f\r\n	y=%.4f\r\n	z=%.4f\r\n	err=%d\r\n", best_solution->x, best_solution->y, best_solution->z, result);
+        
 	if (result >= 0)
 	{
+	 	printf("{\"Time\":\"%s\",\"addr\":\"%s\",\"AreaX\":%4f,\"AreaY\":%4f,\"positionX\":%4f,\"positionY\":%4f,\"positionZ\":%4f,\"err\":%d}\r\n",
+                time,addr,areax,areay, best_solution->x, best_solution->y, best_solution->z, result);
 		return result;
 	}
-
+	 printf("{\"Time\":\"%s\",\"addr\":\"%s\",\"AreaX\":%4f,\"AreaY\":%4f,\"positionX\":NAN,\"positionY\":NAN,\"positionZ\":NAN,\"err\":%d}\r\n",
+         time,addr,areax,areay, result);
 	//return error
 	return -1;
 }
 
-int calculateTagLocation(vec3d *report, int count, distance_struct_t *ranges)
+int calculateTagLocation(vec3d *report, int count, distance_struct_t *ranges )
 {
 	int result = 0;
 	vec3d anchorArray[4];
@@ -758,7 +761,7 @@ int calculateTagLocation(vec3d *report, int count, distance_struct_t *ranges)
 	_distanceArray[2] = ranges[2].r;
 	_distanceArray[3] = ranges[3].r;
 
-	result = GetLocation(report, ((count == 4) ? 1 : 0), &anchorArray[0], &_distanceArray[0]);
+	//result = GetLocation(report, ((count == 4) ? 1 : 0), &anchorArray[0], &_distanceArray[0] );
 
 	return result;
 }

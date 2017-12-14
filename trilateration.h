@@ -79,7 +79,7 @@ double dot(const vec3d vector1, const vec3d vector2);
 /* Replace vector with its cross product with another vector. */
 vec3d cross(const vec3d vector1, const vec3d vector2);
 
-int GetLocation(vec3d *best_solution, int use4thAnchor, vec3d* anchorArray, int *distanceArray);
+int GetLocation(vec3d *best_solution, int use4thAnchor, vec3d* anchorArray, int *distanceArray ,char *time,char *addr, float areax, float areay);
 
 int calculateTagLocation(vec3d *report, int count, distance_struct_t *ranges);
 	

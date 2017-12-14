@@ -12,7 +12,7 @@ var filename = 'trying.log';
 var mosq = [];
 var str1 = 'mosquitto -v -p 8883';
 var str = 'mosquitto_sub -t fall-locate/Sensor-fe:52:df:aa:1c:6a -h 192.168.3.225 -p 8883 >>test.log';
-var position_cmd='./test ';
+var position_cmd='./test time0923748857 00:00:00:00 10 10 ';
 
 
 var mosqparam = [
@@ -31,9 +31,23 @@ var logDate = new Date();//更新时间
 //		TXPower:parseFloat(TXPower)//转化为浮点数
 //	};
 	console.log('pushAWS');
-/*
+//var device[]={
+
+//}
+
+var device = {
+	count: 0,
+	disFlag: false
+	};
+
+var addr1="fe:oo:jre";
+var addr2="kd:mm:klk";
+ 
+
 	try{
-	
+
+
+/*
 //	exec('mosquitto_sub', mosqparam.concat('-t', 'fall-locate/Sensor-fe:52:df:aa:1c:6a'),
  exec(str1,function(error, stdout, stderr) {
                          // published
@@ -53,10 +67,21 @@ exec(str, function(error, stdout, stderr) {
     console.log( 'stdout',  stdout);
 //			callback(false, error);
 	});
+*/
+ console.log(position_cmd.concat(0,' ',10000,' ',14000,' ',10000,' >>position.log'));
+                  exec(position_cmd.concat(0,' ',10000,' ',14000,' ',10000,' >>position.log'),
+                   function(error, stdout, stderr){
+                  if(error){
+                  console.log('position cmd error',stderr);
+                  }
+                  console.log('position ', stdout);
+                  });
+
+
 		}catch (e) {//当发生错误时运行
 	console.log('readdirSync: ' + e);
 
-*/
+}
 
 //readkine
 var logsArr = new Array();
@@ -215,5 +240,5 @@ var listenLogs = function(filePath){
 //function getNewLog(path){
 //  console.log('做一些解析操作');
 //}
-init();
+//init();
 
