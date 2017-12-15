@@ -319,8 +319,10 @@ function ReadHisLogs(filename, listenLogs){
 
 	function generateTxt(str){
 	var i;
-	var temp = str;
-console.log('在线json转换之前:%s oooo',temp);
+	var temp = str.split('\n');
+for(var x=0;x<temp.length;x++){console.log('第%d -- %s',x,temp[x]);}
+	temp=temp[0];
+console.log('templength %d,在线json转换之前:%s oooo',temp.length,temp);
 	var JSONDATA = JSON.parse(temp);
 console.log('在线json转换之后');
 /*
