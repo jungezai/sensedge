@@ -14,7 +14,7 @@ var fs = require('fs');
 var readline = require('readline');
 var filename = 'trying.log';//mqtt sub's data
 var mosq_comand = 'mosquitto -v -p 8883';
-var mosq_sub_comand = 'mosquitto_sub -p 8883 -t fall-locate/Sensor-fe:52:df:aa:1c:6a';
+var mosq_sub_comand = 'mosquitto_sub -p 8883 -t fall-locate/Sensor-fe:52:df:aa:1c:6a ';
 var position_comand = './test ';
 var areax=10;
 var areay=10;
@@ -138,42 +138,41 @@ var DevInfo=new Array();
 try{
 	exec_mosq(hostcmd, function(error, stdout, stderr){
 	if(error){
-	console.error('hostcmd',stderr);
-	throw error;
+		console.error('hostcmd',stderr);
+		throw error;
 	}
-
-	console.log('stdout--host', stdout);
-	stdout = stdout.split(' ');
-	hostip = stdout[0];
-	console.log('master router hostip:',hostip);
+	else{
+		console.log('stdout--host', stdout);
+		stdout = stdout.split(' ');
+		hostip = stdout[0];
+		console.log('master router hostip:',hostip);
 	//for(var s in stdout){
 //	console.log('s'+s,stdout[0]);
 	//}
-	});
+	
 
 //master Router operate
 	if(os.hostname == 'raspberrypi'){
 //open mqtt
-	exec_mosq(mosq_comand, function(error, stdout, stderr){
-	if(error){
-	console.error('mosq stderr', stderr);
-//	throw error;
-	}
-	console.log('stdout', stdout);
-	});
+		exec_mosq(mosq_comand, function(error, stdout, stderr){
+			if(error){
+			console.error('mosq stderr', stderr);
+//			throw error;
+			}
+		console.log('stdout', stdout);
+		});
 //open mqtt sub
-//	console.log('--------',mosq_sub_comand.concat('-h', ' ', '192.168.3.225', ' >>trying.log'));
-	exec_mosq(mosq_sub_comand.concat(' -h', ' ',hostip, ' >>trying.log'), function(error, stdout, stderr){
-	if(error){
-	console.error('mosq sub stderr', stderr);
-//	throw error;
+		console.log('mqttsub--cmd--:',mosq_sub_comand.concat('-h', ' ', hostip, ' >>trying.log'));
+		exec_mosq(mosq_sub_comand.concat(' -h', ' ',hostip, ' >>trying.log'), function(error, stdout, stderr){
+			if(error){
+			console.error('mosq sub stderr', stderr);
+//			throw error;
+			}
+		console.log('stdout', stdout);
+		});
+		init();
 	}
-	console.log('stdout', stdout);
-	});
-
-	init();
-
-	}
+	} });
 //init();
 	}catch(e){
 	console.log('readdirSync:'+e);
@@ -768,7 +767,7 @@ function pushRouter(addr, vt, vh, rssi, txpower, callback){
         sumrssi+=rssi;
 	console.log('count'+count,'sumrssi'+sumrssi,'hostname'+os.hostname,'distance'+distance);
 	if(count>29){
-console.log('push-----------------');
+	console.log('push-----------------');
 //	var logDate = new Date();
 //	var distance = processDistance(sumrssi/count, txpower);
 	var postData = {
@@ -783,6 +782,7 @@ console.log('push-----------------');
 		distance: parseFloat(distance)
 	};
 	console.log("pushRouter--", postData,'json--', JSON.stringify(postData));
+        console.log('mosqpub--cmd:', mosqparam.concat('-t', 'fall-locate/Sensor-' + addr, '-m', JSON.stringify(postData)));
 	execFile('mosquitto_pub', mosqparam.concat('-t', 'fall-locate/Sensor-' + addr, '-m', JSON.stringify(postData)),
 		function(err, stdout, stderr){
 		callback(false, err);
