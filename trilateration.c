@@ -728,7 +728,7 @@ int GetLocation(vec3d *best_solution, int use4thAnchor, vec3d* anchorArray, int 
                 time,addr,areax,areay, best_solution->x, best_solution->y, best_solution->z, result);
 		return result;
 	}
-	 printf("{\"Time\":\"%s\",\"addr\":\"%s\",\"AreaX\":%4f,\"AreaY\":%4f,\"positionX\":NAN,\"positionY\":NAN,\"positionZ\":NAN,\"err\":%d}\r\n",
+	 printf("{\"Time\":\"%s\",\"addr\":\"%s\",\"AreaX\":%4f,\"AreaY\":%4f,\"positionX\":-1,\"positionY\":-1,\"positionZ\":-1,\"err\":%d}\r\n",
          time,addr,areax,areay, result);
 	//return error
 	return -1;

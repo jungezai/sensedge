@@ -14,6 +14,22 @@
 </style>
 
 <script>
+var exec = require('child_process').exec;
+var hostip;
+var hostcmd ='sudo nmblookup raspberrypi'; 
+
+exec(hostcmd, function(error, stdout, stderr){
+          if(error){
+                  console.error('hostcmd',stderr);
+                  alert(stderr);
+          }
+          else{
+                  console.log('stdout--host', stdout);
+                  stdout = stdout.split(' ');
+                  hostip = stdout[0];
+                  alert('master router hostip:',hostip);
+         }
+
 function getcontent()
 {
 setInterval(function(){

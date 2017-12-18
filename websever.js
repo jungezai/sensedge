@@ -1,7 +1,9 @@
 var http = require('http');
 var fs = require('fs');
 var url = require('url');
+var exec = require('child_process').exec;
 
+var filename = 'position.log';
 //-----------------------------
 var readline = require('readline');
 var responseData="";
@@ -9,7 +11,46 @@ var addrinfo = new Array();
 var logsArr = new Array();
 var t;
 var T;
+var changemod = 'sudo chmod 777 position.log';
+var hostcmd = 'sudo nmblookup ';
+var hostip ;
+var hostname ;
 function ReadHisLogs(filename, listenLogs){
+   try{ exec(changemod, function(error, stdout, stderr){
+        if(error){
+                  console.error('changomode stderr', stderr);
+ //                      throw error;
+                  }
+        });
+
+	 exec('hostname', function(error, stdout, stderr){
+        if(error){
+                  console.error('get hostname err', stderr);
+ //                      throw error;
+                  }
+        else{
+                hostname = stdout;
+                console.log('hostname :',hostname);
+                }
+
+
+	exec(hostcmd.concat( hostname), function(error, stdout, stderr){
+        if(error){
+                  console.error('get server ip err', stderr);
+ //                      throw error;
+                  }
+	else{
+                stdout = stdout.split(' ');
+                hostip = stdout[0]; 
+                console.log('server ip:',hostip);
+		}
+        }); 
+	});
+	 }catch(e){
+          console.log('readdirSync:'+e);
+  }
+
+
 	var r1 = readline.createInterface({input: fs.createReadStream(filename,
 	{ enconding:'utf8'  }), output: null, terminal: false});
 	r1.on('line', function(line){
@@ -65,8 +106,11 @@ function listenLogs(filePath){
 		if(curr.mtime>prev.mtime){
 		buffer = new Buffer(curr.size - prev.size);
 			fs.read(fd, buffer, 0,(curr.size - prev.size),prev.size,function(err, bytesRead, buffer){
-			responseData=buffer.toString().split('\r\n') ;
-			var JSONDATA= JSON.parse(responseData);
+		responseData=buffer.toString().split('\n') ;
+ for(var t=0;t<responseData.length;t++)
+
+console.log(responseData[t]);
+			var JSONDATA= JSON.parse(responseData[0]);
                  	for( t=0;t<addrinfo.length;t++)
 	                {
                          if(addrinfo[t].addr==JSONDATA.addr)
@@ -99,7 +143,7 @@ function listenLogs(filePath){
 	});
 }
 
-var filename = 'position.txt';
+
 ReadHisLogs(filename,listenLogs);
 // 创建服务器
 http.createServer( function (request, response) {
@@ -148,7 +192,6 @@ http.createServer( function (request, response) {
    //});
 }).listen(9000);
 
-// 控制台会输出以下信息
-console.log('Server running at http://127.0.0.1:9000/');
+
 
 
