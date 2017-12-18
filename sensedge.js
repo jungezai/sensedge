@@ -1,3 +1,4 @@
+
 var os = require('os');
 var noble = require('noble');
 var nodemailer = require('nodemailer');
@@ -12,12 +13,19 @@ var util = require('util');
 var exec_mosq = require('child_process').exec;
 var fs = require('fs');
 var readline = require('readline');
-var filename = 'trying.log';//mqtt sub's data
-var mosq_comand = 'mosquitto -v -p 8883';
-var mosq_sub_comand = 'mosquitto_sub -p 8883 -t fall-locate/Sensor-fe:52:df:aa:1c:6a ';
-var position_comand = './test ';
-var areax=10;
-var areay=10;
+var filename = 'MQTTdistanceData.log';//mqtt sub's data
+var positionlogname = 'position.log'
+var port = '8883';
+var hostip;
+var tag = 'fall-locate';
+var position_comand = './CalculatePosition ';
+var mosq_cmd = '';
+var mosq_sub_cmd = '';
+var mosq_pub_cmd = '';
+var areax=3;//set position area to calculate
+var areay=3;//
+var A = 70;
+var n = 2.1;
 // Constant
 const TYPE_DIAPERSENS =	1
 const TYPE_FALLSENS   = 2
@@ -111,19 +119,8 @@ function Device(peripheral) {
 	this.TXPower		= peripheral.advertisement.txPowerLevel;
 }
 
-var hostip;
 var device_addr;
-var mosq_param = [
-	'-h', hostip,
-	'-p', '8883'
-	];
-//var mosp_sub_param = [
-//	'-h', hostip,
-//	'-p', '8883',
-//	'-t', 'fall-locate/Sensor-'+device_addr
-//	];
-var hostcmd = 'nmblookup raspberrypi';
-
+var hostcmd = 'sudo nmblookup raspberrypi';
 var disFlag = new Array();
 var logsArr = new Array();
 var listenArr = new Array();
@@ -146,15 +143,11 @@ try{
 		stdout = stdout.split(' ');
 		hostip = stdout[0];
 		console.log('master router hostip:',hostip);
-	//for(var s in stdout){
-//	console.log('s'+s,stdout[0]);
-	//}
-	
-
 //master Router operate
 	if(os.hostname == 'raspberrypi'){
 //open mqtt
-		exec_mosq(mosq_comand, function(error, stdout, stderr){
+		console.log(mosq_cmd.concat('mosquitto ','-v -p ',port));
+		exec_mosq(mosq_cmd.concat('mosquitto -v -p ',port), function(error, stdout, stderr){
 			if(error){
 			console.error('mosq stderr', stderr);
 //			throw error;
@@ -162,8 +155,8 @@ try{
 		console.log('stdout', stdout);
 		});
 //open mqtt sub
-		console.log('mqttsub--cmd--:',mosq_sub_comand.concat('-h', ' ', hostip, ' >>trying.log'));
-		exec_mosq(mosq_sub_comand.concat(' -h', ' ',hostip, ' >>trying.log'), function(error, stdout, stderr){
+		console.log('mqttsub--cmd--:',mosq_sub_cmd.concat('mosquitto_sub',' -h ',hostip,' -p ',port,' -t ',tag,' >>'+filename));
+		exec_mosq(mosq_sub_cmd.concat('mosquitto_sub',' -h ',hostip,' -p ',port,' -t ',tag,' >>'+filename), function(error, stdout, stderr){
 			if(error){
 			console.error('mosq sub stderr', stderr);
 //			throw error;
@@ -173,12 +166,9 @@ try{
 		init();
 	}
 	} });
-//init();
 	}catch(e){
 	console.log('readdirSync:'+e);
 }
-//init;
-
 
 function init(){
 	ReadHisLogs(filename, listenLogs);
@@ -197,21 +187,7 @@ function ReadHisLogs(filename, listenLogs){
 		var JSONDATA = JSON.parse(temp);
 		device_addr = JSONDATA.addr;
 //		console.log(JSONDATA.HostName);
-/*
 	console.log('读取数据：' + logsArr[i]);
-	 if( discount >= 4){
-                         //console.log(position_comand.concat(DistanceArray[0],' ',DistanceArray[1],' ',DistanceArray[2],' ',DistanceArray[3],' >>position.log'));
-                         exec_mosq(position_comand.concat(DistanceArray[0],' ',DistanceArray[1],' ',DistanceArray[2],' ',DistanceArray[3],' >position.log'),
-                         function(error, stdout, stderr){
-                         if(error)console.log('positon cmd error');
-                         console.log('positon stdout',stdout);
-                         });
-                         //清零
-                         count = 0;
-                         for(var i=0;i<4;i++)  DistanceArray[i] = 0;
-                 }
-
-*/
 		for( var j=0;j<DevInfo.length;j++)
 		{
 
@@ -224,9 +200,9 @@ function ReadHisLogs(filename, listenLogs){
 			else if(j==DevInfo.length-1)
 			{
 			console.log('创建新设备:'+JSONDATA.addr+'信息：'+temp);
-			console.log('befor '+DevInfo.length);
+//			console.log('befor '+DevInfo.length);
 			DevInfo[DevInfo.length]=  EmptyDevjson;
-			console.log('after '+DevInfo.length);
+//			console.log('after '+DevInfo.length);
  	                DevInfo[DevInfo.length-1].addr=JSONDATA.addr;
  	                DealdisData(JSONDATA,DevInfo.length-1);
 
@@ -241,7 +217,6 @@ function ReadHisLogs(filename, listenLogs){
 		DealdisData(JSONDATA,0);
 		}
 	}
-
 	listenLogs(filename);
 	});
 }
@@ -278,8 +253,8 @@ function ReadHisLogs(filename, listenLogs){
 	if(DevInfo[num].count>=4)
 	{
 	DevInfo[num].datetime = json.datetime;
-	console.log('调用位置算法'+position_comand.concat(DevInfo[num].datetime,' ',DevInfo[num].addr,' ',areax,' ',areay,' ',DevInfo[num].distance.raspberrypi,' ',DevInfo[num].distance.raspClient1,' ',DevInfo[num].distance.raspClient2,' ',DevInfo[num].distance.raspClient3, ' >>position.log'));
-        exec_mosq(position_comand.concat(DevInfo[num].datetime,' ',DevInfo[num].addr,' ',areax,' ',areay,' ',DevInfo[num].distance.raspberrypi,' ',DevInfo[num].distance.raspClient1,' ',DevInfo[num].distance.raspClient2,' ',DevInfo[num].distance.raspClient3,' >>position.log'),
+	console.log('调用位置算法'+position_comand.concat(DevInfo[num].datetime,' ',DevInfo[num].addr,' ',areax,' ',areay,' ',DevInfo[num].distance.raspberrypi*1000,' ',DevInfo[num].distance.raspClient1*1000,' ',DevInfo[num].distance.raspClient2*1000,' ',DevInfo[num].distance.raspClient3*1000, ' >>'+positionlogname));
+        exec_mosq(position_comand.concat(DevInfo[num].datetime,' ',DevInfo[num].addr,' ',areax,' ',areay,' ',DevInfo[num].distance.raspberrypi*1000,' ',DevInfo[num].distance.raspClient1*1000,' ',DevInfo[num].distance.raspClient2*1000,' ',DevInfo[num].distance.raspClient3*1000,' >>'+positionlogname),
         function(error, stdout, stderr){
         if(error)console.log('positon cmd error');
         console.log('positon stdout',stdout);
@@ -307,7 +282,7 @@ function ReadHisLogs(filename, listenLogs){
 		},function(curr, prev){
 		console.log(curr);
 		if(curr.mtime>prev.mtime){
-		console.log('文件变化==========');
+		console.log('文件数据变化');
 		buffer = new Buffer(curr.size - prev.size);
 
 		fs.read(fd, buffer, 0,(curr.size - prev.size),prev.size,function(err, bytesRead, buffer){
@@ -320,24 +295,12 @@ function ReadHisLogs(filename, listenLogs){
 	function generateTxt(str){
 	var i;
 	var temp = str.split('\n');
-for(var x=0;x<temp.length;x++){console.log('第%d -- %s',x,temp[x]);}
+//for(var x=0;x<temp.length;x++){console.log('第%d -- %s',x,temp[x]);}
 	temp=temp[0];
-console.log('templength %d,在线json转换之前:%s oooo',temp.length,temp);
+//console.log('templength %d,在线json转换之前:%s oooo',temp.length,temp);
 	var JSONDATA = JSON.parse(temp);
-console.log('在线json转换之后');
-/*
-	          if( count >= 4){
-                 console.log(position_comand.concat(DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' >>position.log'));
-                 exec(position_comand.concat(DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' ',DistanceArray[0],' >>position.log'),
-                 function(error, stdout, stderr){
-                 if(error)  console.log('positon cmd error');
-                 console.log('positon stdout',stdout);
-                 });
-                 //清零
-         count = 0;
-         for(var i=0;i<4;i++)  DistanceArray[i] = 0; 
-         }
-*/
+//console.log('在线json转换之后');
+
 //         console.log(JSONDATA.HostName);
 
 	for( i=0;i<DevInfo.length;i++)
@@ -556,8 +519,6 @@ function processFallSens(addr, dev, data) {
 
 function processDistance(rssi, txpower){
 	if(rssi == 0) return -1;
-	var A = 65;
-	var n = 3.0;
 	var iRssi = Math.abs(rssi);
 	var power = (iRssi-A)/(10*n);
 	return (Math.pow(10,power)).toFixed(4);
@@ -760,7 +721,7 @@ function pushRouter(addr, vt, vh, rssi, txpower, callback){
 		//'--cert', 'certs/keys/certificate.pem',
 		//'--key', 'certs/keys/private.key',
 		'-h', hostip,
-		'-p', '8883'
+		'-p', port
 	];
  var logDate = new Date();
  var distance = processDistance(sumrssi/count, txpower);
@@ -768,10 +729,10 @@ function pushRouter(addr, vt, vh, rssi, txpower, callback){
 	count++;
         sumrssi+=rssi;
 	console.log('count'+count,'sumrssi'+sumrssi,'hostname'+os.hostname,'distance'+distance);
-	if(count>29){
-	console.log('push-----------------');
-//	var logDate = new Date();
-//	var distance = processDistance(sumrssi/count, txpower);
+	if(count>9){
+	console.log('push to MasterRouter...');
+
+
 	var postData = {
 		datetime: logDate.toISOString(),
 		HostName: os.hostname(),
@@ -780,12 +741,11 @@ function pushRouter(addr, vt, vh, rssi, txpower, callback){
 //		humidity: parseFloat(vh),
 		Rssi: rssi,
 		TXPower: txpower,
-//		count: count,
 		distance: parseFloat(distance)
 	};
-	console.log("pushRouter--", postData,'json--', JSON.stringify(postData));
-        console.log('mosqpub--cmd:', mosqparam.concat('-t', 'fall-locate/Sensor-' + addr, '-m', JSON.stringify(postData)));
-	execFile('mosquitto_pub', mosqparam.concat('-t', 'fall-locate/Sensor-' + addr, '-m', JSON.stringify(postData)),
+	console.log("pushRouterData", postData,'\r\njson--', JSON.stringify(postData));
+        console.log('MQTTpub--cmd:', 'mosquitto_pub',mosqparam.concat('-t', tag, '-m', JSON.stringify(postData)) );
+	execFile( 'mosquitto_pub', mosqparam.concat('-t', tag, '-m', JSON.stringify(postData) ),
 		function(err, stdout, stderr){
 		callback(false, err);
 	});
