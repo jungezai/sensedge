@@ -14,28 +14,12 @@
 </style>
 
 <script>
-var exec = require('child_process').exec;
-var hostip;
-var hostcmd ='sudo nmblookup raspberrypi'; 
-
-exec(hostcmd, function(error, stdout, stderr){
-          if(error){
-                  console.error('hostcmd',stderr);
-                  alert(stderr);
-          }
-          else{
-                  console.log('stdout--host', stdout);
-                  stdout = stdout.split(' ');
-                  hostip = stdout[0];
-                  alert('master router hostip:',hostip);
-         }
-
 function getcontent()
 {
 setInterval(function(){
 	var xmlhttp;
 	var aa="";
-        var url= "http://192.168.3.225:9000/position.txt";
+        var url= "http://192.168.3.225:9000/fe:52:df:aa:1c:6a";
 //	alert(((1500/309)*105).toFixed(0));
 	if (window.XMLHttpRequest)
 	{
@@ -61,7 +45,7 @@ setInterval(function(){
 			newdot(aa.AreaX,aa.areaY,aa.positionX,aa.positionY );
 		}
 	}
-	xmlhttp.open("post","http://192.168.3.225:9000/00:00:00:00:00",true);
+	xmlhttp.open("post",url,true);
 	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
 	xmlhttp.send("DevAddr=9086756");
        
