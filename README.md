@@ -8,7 +8,7 @@ This repo is for ElderSens Inc's SensEdge Project：Fallsens Location Display Sy
 
 1.Connecting the LAN WiFi for 4 Router Router is connected to the mouse and display, and the WiFi is manually connected, and it is set to an automatic 
 connection. (default will be automatically connected next time) 
-2.Set the Host name of 4 Router 4 raspberry pie Router as the positioning base, the position origin 4 of the Router host ======== name is set to
+2.Set the Host name of 4 Router 4 raspberry pie Router as the positioning base, the position origin 4 of the Router hostname is set to
  "raspberrypi",and it will be the master Router to calculate fallsens's position; a clockwise direction of the next Router name is "raspClient1", 
 "raspClient2", the last "raspClient3".
   
@@ -19,7 +19,7 @@ connection. (default will be automatically connected next time)
                     *                                            *
                     *                                            *
                     *                                            *
-	 raspberrypi**********************************************raspClient3
+         raspberrypi**********************************************raspClient3
 
 3.Install samba Execute the command line command: sudo apt-get install samba. The purpose is to use the "nmblookup" command 
 in the LAN to use the host name to query the corresponding IP address. Execute the command line command: sudo apt-get install
