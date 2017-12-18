@@ -67,3 +67,13 @@
 {"datetime":"2017-12-18T05:51:22.305Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-72.53333333333333,"TXPower":-8,"distance":1.3179}
 {"datetime":"2017-12-18T05:51:52.287Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-71.6,"TXPower":-8,"distance":1.199}
 {"datetime":"2017-12-18T05:52:22.324Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-71.73333333333333,"TXPower":-8,"distance":1.2173}
+{"datetime":"2017-12-18T05:52:52.576Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-75,"TXPower":-8,"distance":1.7499}
+{"datetime":"2017-12-18T05:53:22.395Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-73.03333333333333,"TXPower":-8,"distance":1.3532}
+{"datetime":"2017-12-18T05:53:52.350Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-71.6,"TXPower":-8,"distance":1.2035}
+{"datetime":"2017-12-18T05:54:22.453Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-71.86666666666666,"TXPower":-8,"distance":1.2452}
+{"datetime":"2017-12-18T05:54:52.498Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-70.93333333333334,"TXPower":-8,"distance":1.1117}
+{"datetime":"2017-12-18T05:55:22.426Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-72.23333333333333,"TXPower":-8,"distance":1.2981}
+{"datetime":"2017-12-18T05:55:52.590Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-72.76666666666667,"TXPower":-8,"distance":1.3635}
+{"datetime":"2017-12-18T05:56:23.779Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-72.03333333333333,"TXPower":-8,"distance":1.2452}
+{"datetime":"2017-12-18T05:56:54.175Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-73.06666666666666,"TXPower":-8,"distance":1.3843}
+{"datetime":"2017-12-18T05:57:23.488Z","HostName":"raspClient1","addr":"fe:52:df:aa:1c:6a","Rssi":-72,"TXPower":-8,"distance":1.2452}
