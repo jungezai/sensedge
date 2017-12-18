@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>EldersensLocationDisplaySystem </title>
+<style type="text/css">
+.container{
+	margin:0 auto;
+	width:1920px;
+}
+#scene{
+	border:1px solid black;
+}
+</style>
+
+<script>
+function getcontent()
+{
+setInterval(function(){
+	var xmlhttp;
+	var aa="";
+        var url= "http://192.168.3.225:9000/position.txt";
+//	alert(((1500/309)*105).toFixed(0));
+	if (window.XMLHttpRequest)
+	{
+//		 alert("IE7+");
+
+		//  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+		xmlhttp=new XMLHttpRequest();
+	}
+	else
+	{
+		 alert("IE5 IE6");
+
+		// IE6, IE5 浏览器执行代码
+		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}
+	xmlhttp.onreadystatechange=function()
+	{
+                if (xmlhttp.readyState==4 && xmlhttp.status==200)
+		{
+			aa=JSON.parse(xmlhttp.responseText);
+			alert(aa.positionX,aa.positionY);
+//			document.getElementById("myDiv").innerHTML=xmlhttp.responseText;
+			newdot(aa.AreaX,aa.areaY,aa.positionX,aa.positionY );
+		}
+	}
+	xmlhttp.open("post","http://192.168.3.225:9000/00:00:00:00:00",true);
+	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	xmlhttp.send("DevAddr=9086756");
+       
+},10000);
+}
+
+</script>
+
+</head>
+<body>
+<div id="header" style="background-color:#FFA500;height:1200px;width:1920px;">
+<div id="BigTitle" style="background-color:#EEEEEE"  class="container"><h1>
+<canvas id="myCanvas_title" class="container" width="900" height="70" style="border:1px solid #d3d3d3;">
+Your browser does not support the HTML5 canvas tag.</canvas>
+
+<script type="text/javascript">
+var c=document.getElementById("myCanvas_title");
+var ctx=c.getContext("2d");
+ctx.font="70px Verdana";
+// Create gradient
+var gradient=ctx.createLinearGradient(0,0,c.width,0);
+gradient.addColorStop("0","magenta");
+gradient.addColorStop("0.5","blue");
+gradient.addColorStop("1.0","red");
+// Fill with gradient
+ctx.strokeStyle=gradient;
+ctx.strokeText("FallSense Location Display",50,55);
+</script>
+
+</h1></div>
+
+
+<div id="menu" style="background-color:#FFD700;height:800px;width:400px;float:left;">
+<button type="button" onclick="getcontent()">开始定位</button>
+</div>
+
+<div id="location" style="background-color:#EEEEEE" >
+
+<canvas id="myCanvas" width="1500" height="800"  style="border:1px solid #d3d3d3; float:left;">您的浏览器不支持 HTML5 canvas 标签。</canvas>
+
+</div>
+
+<script>
+
+function init()
+{
+var c=document.getElementById("mycanvas");
+var ctx=c.getContext("2d");
+ctx.beginPath();
+ctx.lineWidth="20";
+ctx.strokeStyle="#000000";
+ctx.rect(15,10,1470,780);  
+ctx.stroke();
+//alert(( (1500/300) * 100 ).toFixed(0));
+}
+
+function newdot(ax,ay,x,y)
+{
+var d=document.getElementById("myCanvas");
+var ctxd=d.getContext("2d");
+ x=( (1500/ax) * x ).toFixed(0);
+ y=( (800/ay) * y ).toFixed(0);	
+ctxd.beginPath();
+ctxd.strokeStyle="#0000ff";
+ctxd.fillStyle="blue";
+ctxd.arc(x,y,10,0,2*Math.PI);
+ctxd.fill();           //开始填充
+ctxd.stroke();
+}
+init();
+//newdot(50,50);
+</script>
+<div id="footer" style="background-color:#FFA500;clear:both;text-align:center;">版权 © CFX.com</div> 
+
+</div>
+</body>
+</html>
